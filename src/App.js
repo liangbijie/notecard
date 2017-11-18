@@ -3,6 +3,7 @@ import marked from 'marked';
 import './App.css';
 import {HotKeys} from 'react-hotkeys';
 import Tip from './components/tips'
+import Noteslist from "./components/notesList";
 
 const localStorageName = 'markdowntest'
 
@@ -28,13 +29,20 @@ class App extends Component {
       originValue: '',
       value: '',
       content: '',
-      randomNum: -1
+      randomNum: -1,
+      markdownArr: []
     };
     this.inputEvent = this.inputEvent.bind(this);
     this.saveEvent = this.saveEvent.bind(this);
     this.getEvent = this.getEvent.bind(this);
     this.deleteEvent = this.deleteEvent.bind(this);
     this.newNoteEvent = this.newNoteEvent.bind(this);
+  }
+  componentWillMount () {
+    let { markdownArr } = this.getData();
+    this.setState({
+      markdownArr: markdownArr
+    })
   }
   inputEvent (e) {
     // marked配置 https://github.com/chjj/marked
@@ -64,31 +72,36 @@ class App extends Component {
 
     let markdownStorage = localStorage[localStorageName] && localStorage[localStorageName] || '[]';
     let markdownArr = JSON.parse(markdownStorage);
-    let length
+    let markdownStr;
+    let length;
 
     if (this.state.randomNum == -1) {
       // -1代表新建
       markdownArr.push(originValue)
       length = markdownArr.length - 1
-      markdownArr = JSON.stringify(markdownArr)
+      markdownStr = JSON.stringify(markdownArr)
       
       this.setState({
         randomNum: length
       })
     } else {
       markdownArr[this.state.randomNum] = this.state.originValue;
-      markdownArr = JSON.stringify(markdownArr)
-      localStorage.setItem(localStorageName, markdownArr);
+      markdownStr = JSON.stringify(markdownArr)
     }
-    localStorage.setItem(localStorageName, markdownArr);
+    localStorage.setItem(localStorageName, markdownStr);
     this.setState({
       tips: '保存成功',
-      timestamp: new Date()
+      timestamp: new Date(),
+      markdownArr: markdownArr
     })
   }
   // 事件: 获取
-  getEvent () {
-    let { randomMarkdown, randomNum } = this.getData()
+  getEvent (randomNum) {
+    if (randomNum) {
+      var { randomMarkdown } = this.getData(randomNum)
+    } else {
+      var { randomMarkdown, randomNum } = this.getData()
+    }
     let value = marked(randomMarkdown, {breaks:true, sanitize:true, gfm:true});
     this.setState(prevState => ({
       originValue: randomMarkdown,
@@ -99,18 +112,29 @@ class App extends Component {
   // 事件: 删除
   deleteEvent () {
     let { markdownArr } = this.getData();
+    let markdownStr;
     markdownArr.splice(this.state.randomNum, 1)
     readedArr.remove(this.state.randomNum)
-    markdownArr = JSON.stringify(markdownArr)
-    localStorage.setItem(localStorageName, markdownArr);
-
+    markdownStr = JSON.stringify(markdownArr)
+    localStorage.setItem(localStorageName, markdownStr);
+    this.setState({
+      markdownArr: markdownArr
+    })
   }
   // 获取数据
-  getData () {
+  getData (randomNumPre) {
     let markdownArr = localStorage[localStorageName] && JSON.parse(localStorage[localStorageName]) || [];
     let length = markdownArr.length;
     let randomNum,
         randomMarkdown;
+    if (randomNumPre) {
+      return {
+        randomNum: randomNumPre,
+        markdownArr: markdownArr,
+        length: length,
+        randomMarkdown: markdownArr[randomNumPre]
+      }
+    }
     if (length == 0) {
       this.setState(prevState => ({
         originValue: '',
@@ -167,6 +191,7 @@ class App extends Component {
           </div>
         </div>
         <Tip content={this.state.tips} timestamp={this.state.timestamp}></Tip>
+        <Noteslist notelist={this.state.markdownArr} handleClick={this.getEvent}></Noteslist>
       </HotKeys>
     );
   }

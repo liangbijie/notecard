@@ -1,0 +1,61 @@
+.notes-list-wrap {
+    margin: 0;
+    top: 0;
+    left: -200px;
+    position: fixed;
+    height: 100%;
+    width: 200px;
+    background: #dddddd;
+}
+.notes-list-wrap .notes-list {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 200px;
+    background: #dddddd;
+    overflow-y: scroll;
+}
+.notes-list-wrap .notes-list li {
+    width: 200px;
+    height: 40px;
+    line-height: 40px;
+    margin-top: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: red;
+    cursor: pointer;
+}
+.notes-list-wrap .show-list {
+    background: black;
+    position: absolute;
+    margin-top: -40px;
+    margin-right: -24px;
+    right: 0;
+    top: 50%;
+    width: 20px;
+    height: 80px;
+    padding: 5px 2px;
+    line-height: 20px;
+    border-bottom-right-radius: 10px;
+    border-top-right-radius: 10px;
+    cursor: pointer;
+}
+
+.hide {
+    left: -200px;
+    animation: hide 0.5s;
+}
+.show {
+    left: 0;
+    animation: show 0.5s;
+}
+
+@keyframes show{
+    0%   {left:-200px;}
+    100% {left:0px;}
+}
+@keyframes hide {
+    0%   {left:0;}
+    100% {left:-200px;}
+}

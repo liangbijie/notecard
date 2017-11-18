@@ -2,16 +2,19 @@ import React, { Component } from 'react';
 import marked from 'marked';
 import './App.css';
 import {HotKeys} from 'react-hotkeys';
+import Tip from './components/tips'
+
+const localStorageName = 'markdowntest'
 
 const map = {
   'hotGetEvent': 'command+j',
   'hotSaveEvent': 'command+k',
-  'deleteNode': ['del', 'backspace']
+  'deleteNode': ['del', 'backspace'],
+  'hotNewNoteEvent': 'command+u'
 };
 let readedArr = []
 
 Array.prototype.remove = function(val) {
-  debugger
   var index = this.indexOf(val);
   if (index > -1) {
     this.splice(index, 1);
@@ -31,7 +34,7 @@ class App extends Component {
     this.saveEvent = this.saveEvent.bind(this);
     this.getEvent = this.getEvent.bind(this);
     this.deleteEvent = this.deleteEvent.bind(this);
-    this.updateEvent = this.updateEvent.bind(this);
+    this.newNoteEvent = this.newNoteEvent.bind(this);
   }
   inputEvent (e) {
     // marked配置 https://github.com/chjj/marked
@@ -42,80 +45,92 @@ class App extends Component {
       content: value
     }));
   }
-  // 事件: 保存
+  // 事件: 新建
+  newNoteEvent () {
+    this.setState({
+      originValue: '',
+      value: '',
+      content: '',
+      randomNum: -1,
+      tips: '新建文档',
+      timestamp: new Date()
+    })
+  }
+  // 事件: 保存和修改
   saveEvent () {
     let originValue = this.state.originValue
 
     if (originValue == '') return 
-    this.saveData(this.state.originValue)
-    this.setState(prevState => ({
-      originValue: '',
-      content: ''
-    }));
+
+    let markdownStorage = localStorage[localStorageName] && localStorage[localStorageName] || '[]';
+    let markdownArr = JSON.parse(markdownStorage);
+    let length
+
+    if (this.state.randomNum == -1) {
+      // -1代表新建
+      markdownArr.push(originValue)
+      length = markdownArr.length - 1
+      markdownArr = JSON.stringify(markdownArr)
+      
+      this.setState({
+        randomNum: length
+      })
+    } else {
+      markdownArr[this.state.randomNum] = this.state.originValue;
+      markdownArr = JSON.stringify(markdownArr)
+      localStorage.setItem(localStorageName, markdownArr);
+    }
+    localStorage.setItem(localStorageName, markdownArr);
+    this.setState({
+      tips: '保存成功',
+      timestamp: new Date()
+    })
   }
   // 事件: 获取
   getEvent () {
     let { randomMarkdown, randomNum } = this.getData()
     let value = marked(randomMarkdown, {breaks:true, sanitize:true, gfm:true});
-
     this.setState(prevState => ({
       originValue: randomMarkdown,
       content: value,
       randomNum: randomNum
     }));
   }
-  // 事件: 修改
-  updateEvent () {
-    let { markdownArr } = this.getData();
-    markdownArr[this.state.randomNum] = this.state.originValue;
-    markdownArr = JSON.stringify(markdownArr)
-    localStorage.setItem('markdowntest', markdownArr);
-    alert('修改成功')
-  }
   // 事件: 删除
   deleteEvent () {
     let { markdownArr } = this.getData();
-
     markdownArr.splice(this.state.randomNum, 1)
     readedArr.remove(this.state.randomNum)
-    debugger
     markdownArr = JSON.stringify(markdownArr)
-    localStorage.setItem('markdowntest', markdownArr);
+    localStorage.setItem(localStorageName, markdownArr);
 
-    this.setState({
-      randomNum: -1
-    })
-
-    this.getEvent()
-  }
-  // 保存数据
-  saveData (markDownStr) {
-    let markdownStorage = localStorage['markdowntest'] && localStorage['markdowntest'] || '[]';
-    let markdownArr = JSON.parse(markdownStorage);
-
-    markdownArr.push(markDownStr)
-    markdownArr = JSON.stringify(markdownArr)
-
-    localStorage.setItem('markdowntest', markdownArr);
   }
   // 获取数据
   getData () {
-    let markdownArr = localStorage['markdowntest'] && JSON.parse(localStorage['markdowntest']) || [];
+    let markdownArr = localStorage[localStorageName] && JSON.parse(localStorage[localStorageName]) || [];
     let length = markdownArr.length;
     let randomNum,
         randomMarkdown;
     if (length == 0) {
       this.setState(prevState => ({
         originValue: '',
-        content: ''
+        content: '',
+        tips: '没有可取数据了',
+        timestamp: new Date()
       }))
-      alert('没有可取数据了')
-      return
+      return {
+        randomNum: -1,
+        markdownArr: '',
+        length: 0,
+        randomMarkdown: ''
+      };
     }
-    debugger
     // FIXME: 以下取不重复算法时间复杂度可以优化
     if (readedArr.length == length) {
-      alert('全部读完,重新开始')
+      this.setState(prevState => ({
+        tips: '全部读完,重新开始',
+        timestamp: new Date()
+      }))
       readedArr = []
     }
     do {
@@ -136,7 +151,8 @@ class App extends Component {
   render() {
     const handlers = {
       'hotGetEvent': this.getEvent,
-      'hotSaveEvent': this.saveEvent
+      'hotSaveEvent': this.saveEvent,
+      'hotNewNoteEvent': this.newNoteEvent
     };
     return (
       <HotKeys keyMap={map} handlers={handlers} style={{height: '100%'}}>
@@ -147,9 +163,10 @@ class App extends Component {
             <button id="J_save" onClick={this.saveEvent}>保存</button>
             <button id="J_get" onClick={this.getEvent}>随机取</button>
             <button id="J_delete" onClick={this.deleteEvent}>删除</button>
-            <button id="J_updata" onClick={this.updateEvent}>修改</button>
+            <button id="J_new" onClick={this.newNoteEvent}>新建</button>
           </div>
         </div>
+        <Tip content={this.state.tips} timestamp={this.state.timestamp}></Tip>
       </HotKeys>
     );
   }

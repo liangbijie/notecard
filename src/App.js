@@ -97,7 +97,7 @@ class App extends Component {
   }
   // 事件: 获取
   getEvent (randomNum) {
-    if (randomNum) {
+    if (typeof randomNum == 'string') {
       var { randomMarkdown } = this.getData(randomNum)
     } else {
       var { randomMarkdown, randomNum } = this.getData()
